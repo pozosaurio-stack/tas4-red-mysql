@@ -1,0 +1,40 @@
+name: tas4-red-mysql
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en .env}
+      MYSQL_USER: estudiante
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en .env}
+    volumes:
+      - datos_mysql:/var/lib/mysql
+      - ./inicio/permisos.sql:/docker-entrypoint-initdb.d/01-permisos.sql:ro
+    networks:
+      - aula
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_PASSWORD\" mysql --protocol=TCP -h 127.0.0.1 -u estudiante -e 'SELECT 1' >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  phpmyadmin:
+    image: phpmyadmin:5.2-apache
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    ports:
+      - "127.0.0.1:8084:80"
+    networks:
+      - aula
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+networks:
+  aula:
+    driver: bridge
+
+volumes:
+  datos_mysql:
